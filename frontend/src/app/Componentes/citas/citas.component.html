@@ -1,0 +1,275 @@
+<section class="page-heading">
+  <div>
+    <span class="eyebrow">COORDINACIÓN DE ATENCIÓN</span>
+    <h1>Agenda de citas</h1>
+    <p>Consulta la agenda y organiza los próximos turnos.</p>
+  </div>
+  @if (puedeEditar) {
+    <button class="btn btn-primary" (click)="nuevo()" [disabled]="guardando">+ Nueva cita</button>
+  }
+</section>
+<div class="stat-grid">
+  <div class="stat-card">
+    <span class="stat-label">CITAS EN LA CONSULTA</span
+    ><strong class="stat-number">{{ citas.length }}</strong
+    ><span class="metric-note">{{ fechaFiltro || 'Todas las fechas' }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">POR CONFIRMAR</span
+    ><strong class="stat-number">{{ contar('PENDIENTE') }}</strong
+    ><span class="metric-note">Pendientes</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">CONFIRMADAS</span
+    ><strong class="stat-number">{{ contar('CONFIRMADA') }}</strong
+    ><span class="metric-note">Turnos confirmados</span>
+  </div>
+</div>
+<app-feedback [error]="error" [exito]="exito" [cargando]="cargando" />
+@if (abierto && puedeEditar) {
+  <section class="panel">
+    <div class="panel-header">
+      <h2>{{ editando === null ? 'Registrar cita' : 'Editar cita #' + editando }}</h2>
+      <span class="section-note">Selecciona especialidad y médico</span>
+    </div>
+    <div class="panel-body">
+      <p class="required-note">
+        Los campos con * son obligatorios. El paciente, médico y especialidad deben estar
+        registrados.
+      </p>
+      <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+        <fieldset [disabled]="guardando">
+          <div class="row g-3">
+            <div class="col-12">
+              <label for="idPaciente" class="form-label">Paciente *</label
+              ><select id="idPaciente" class="form-select" formControlName="idPaciente">
+                <option [ngValue]="0">Selecciona un paciente</option>
+                <option *ngFor="let p of pacientes" [ngValue]="p.idPaciente">
+                  {{ p.dni }} · {{ p.nombres }} {{ p.apellidos }}
+                </option></select
+              ><app-field-error [control]="form.controls.idPaciente" />
+            </div>
+            <div class="col-md-6">
+              <label for="idEspecialidad" class="form-label">Especialidad *</label
+              ><select
+                id="idEspecialidad"
+                class="form-select"
+                formControlName="idEspecialidad"
+                (change)="cambiarEspecialidad()"
+              >
+                <option [ngValue]="0">Selecciona una especialidad</option>
+                <option
+                  *ngFor="let e of especialidades"
+                  [ngValue]="e.idEspecialidad"
+                  [disabled]="!e.estado"
+                >
+                  {{ e.nombre }}{{ e.estado ? '' : ' (inactiva)' }}
+                </option></select
+              ><app-field-error [control]="form.controls.idEspecialidad" />
+            </div>
+            <div class="col-md-6">
+              <label for="idMedico" class="form-label">Médico *</label
+              ><select id="idMedico" class="form-select" formControlName="idMedico">
+                <option [ngValue]="0">Selecciona un médico</option>
+                <option *ngFor="let m of medicosDisponibles" [ngValue]="m.idMedico">
+                  {{ m.nombres }} {{ m.apellidos }} · CMP {{ m.cmp }}
+                </option></select
+              ><app-field-error [control]="form.controls.idMedico" />
+              @if (form.controls.idEspecialidad.value && !medicosDisponibles.length) {
+                <small class="text-secondary">No hay médicos activos para esta especialidad.</small>
+              }
+            </div>
+            <div class="col-md-6">
+              <label for="fechaCita" class="form-label">Fecha *</label
+              ><input
+                id="fechaCita"
+                class="form-control"
+                type="date"
+                [min]="hoy"
+                formControlName="fechaCita"
+              /><app-field-error [control]="form.controls.fechaCita" />
+            </div>
+            <div class="col-md-6">
+              <label for="horaCita" class="form-label">Hora *</label
+              ><input
+                id="horaCita"
+                class="form-control"
+                type="time"
+                formControlName="horaCita"
+              /><app-field-error [control]="form.controls.horaCita" />
+            </div>
+            <div class="col-12">
+              <label for="motivoConsulta" class="form-label">Motivo de consulta</label
+              ><textarea
+                id="motivoConsulta"
+                class="form-control"
+                rows="2"
+                maxlength="255"
+                formControlName="motivoConsulta"
+              ></textarea
+              ><app-field-error [control]="form.controls.motivoConsulta" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit">
+              {{ guardando ? 'Guardando…' : 'Guardar cita' }}</button
+            ><button class="btn btn-outline-secondary" type="button" (click)="cancelarEdicion()">
+              Cancelar
+            </button>
+          </div>
+        </fieldset>
+      </form>
+    </div>
+  </section>
+}
+<section class="panel">
+  <div class="panel-header">
+    <h2>Agenda</h2>
+    <button class="btn btn-outline-secondary" (click)="cargar()" [disabled]="cargando || guardando">
+      Actualizar
+    </button>
+  </div>
+  <div class="panel-body pb-0">
+    <form class="toolbar" (ngSubmit)="cargar()">
+      <div>
+        <label for="fechaFiltro" class="form-label">Fecha</label
+        ><input
+          id="fechaFiltro"
+          name="fechaFiltro"
+          type="date"
+          class="form-control"
+          [(ngModel)]="fechaFiltro"
+        />
+      </div>
+      <div>
+        <label for="estadoFiltro" class="form-label">Estado</label
+        ><select
+          id="estadoFiltro"
+          name="estadoFiltro"
+          class="form-select"
+          [(ngModel)]="estadoFiltro"
+        >
+          <option value="">Todos los estados</option>
+          <option value="PENDIENTE">Pendiente</option>
+          <option value="CONFIRMADA">Confirmada</option>
+          <option value="ATENDIDA">Atendida</option>
+          <option value="CANCELADA">Cancelada</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" type="submit" [disabled]="cargando">Consultar</button
+      ><button
+        class="btn btn-outline-secondary"
+        type="button"
+        (click)="limpiarFiltros()"
+        [disabled]="cargando"
+      >
+        Ver todas
+      </button>
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>Cita / horario</th>
+          <th>Paciente</th>
+          <th>Médico</th>
+          <th>Estado</th>
+          <th>Motivo</th>
+          @if (puedeEditar) {
+            <th>Acciones</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let c of visibles">
+          <td>
+            <span class="person-name"
+              >{{ c.fechaCita | date: 'dd/MM/yyyy' }} · {{ c.horaCita.slice(0, 5) }}</span
+            ><span class="table-subtext">Cita #{{ c.idCita }}</span>
+          </td>
+          <td>{{ paciente(c.idPaciente) }}</td>
+          <td>
+            {{ medico(c.idMedico)
+            }}<span class="table-subtext">{{ especialidad(c.idMedico) }}</span>
+          </td>
+          <td>
+            <span class="tag" [ngClass]="c.estado">{{ c.estado }}</span>
+          </td>
+          <td>{{ c.motivoConsulta || '—' }}</td>
+          @if (puedeEditar) {
+            <td>
+              <div class="actions">
+                @if (c.estado === 'PENDIENTE' || c.estado === 'CONFIRMADA') {
+                  <button
+                    class="btn btn-sm btn-outline-primary"
+                    (click)="editar(c)"
+                    [disabled]="guardando"
+                  >
+                    Editar
+                  </button>
+                  @if (c.estado === 'PENDIENTE') {
+                    <button
+                      class="btn btn-sm btn-outline-primary"
+                      (click)="cambiarEstado(c, 'CONFIRMADA')"
+                      [disabled]="guardando"
+                    >
+                      Confirmar
+                    </button>
+                  }
+                  <button
+                    class="btn btn-sm btn-outline-danger"
+                    (click)="porCancelar = c"
+                    [disabled]="guardando"
+                  >
+                    Cancelar cita
+                  </button>
+                } @else {
+                  <span class="section-note">Cita cerrada</span>
+                }
+              </div>
+            </td>
+          }
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  @if (!cargando && !visibles.length) {
+    <div class="empty-state">No hay citas para esta consulta.</div>
+  }
+</section>
+<p class="section-note">
+  Al registrar una atención, la cita pasa a ATENDIDA. Las citas canceladas se conservan en el
+  historial.
+</p>
+@if (porCancelar; as c) {
+  <div class="modal-backdrop-local">
+    <section
+      class="confirm-dialog"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="cancel-title"
+    >
+      <h2 id="cancel-title">¿Cancelar la cita #{{ c.idCita }}?</h2>
+      <p>
+        {{ paciente(c.idPaciente) }} · {{ c.fechaCita | date: 'dd/MM/yyyy' }} a las
+        {{ c.horaCita.slice(0, 5) }}.<br />El turno quedará libre y el registro se conservará.
+      </p>
+      <div class="d-flex gap-2">
+        <button
+          class="btn btn-danger"
+          (click)="cambiarEstado(c, 'CANCELADA')"
+          [disabled]="guardando"
+        >
+          Confirmar cancelación</button
+        ><button
+          class="btn btn-outline-secondary"
+          (click)="porCancelar = null"
+          [disabled]="guardando"
+        >
+          Conservar cita
+        </button>
+      </div>
+    </section>
+  </div>
+}

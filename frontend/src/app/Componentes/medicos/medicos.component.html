@@ -1,0 +1,228 @@
+<section class="page-heading">
+  <div>
+    <span class="eyebrow">DIRECTORIO CLÍNICO</span>
+    <h1>Médicos</h1>
+    <p>Equipo médico, especialidades y datos de contacto.</p>
+  </div>
+  @if (puedeEditar) {
+    <button class="btn btn-primary" (click)="nuevo()" [disabled]="guardando">
+      + Nuevo registro
+    </button>
+  }
+</section>
+<app-feedback [error]="error" [exito]="exito" [cargando]="cargando" />
+@if (abierto && puedeEditar) {
+  <section class="panel">
+    <div class="panel-header">
+      <h2>{{ editando === null ? 'Registrar médico' : 'Editar médico' }}</h2>
+      <span class="section-note">{{ editando ? 'ID ' + editando : 'Nuevo registro' }}</span>
+    </div>
+    <div class="panel-body">
+      <p class="required-note">Los campos con * son obligatorios.</p>
+      <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+        <fieldset [disabled]="guardando">
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label for="dni" class="form-label">DNI * (8 dígitos)</label
+              ><input
+                id="dni"
+                class="form-control"
+                type="text"
+                formControlName="dni"
+                maxlength="8"
+                inputmode="numeric"
+              /><app-field-error [control]="form.controls.dni" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label for="cmp" class="form-label">CMP *</label
+              ><input
+                id="cmp"
+                class="form-control"
+                type="text"
+                formControlName="cmp"
+                maxlength="20"
+              /><app-field-error [control]="form.controls.cmp" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label for="nombres" class="form-label">Nombres *</label
+              ><input
+                id="nombres"
+                class="form-control"
+                type="text"
+                formControlName="nombres"
+                maxlength="100"
+              /><app-field-error [control]="form.controls.nombres" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label for="apellidos" class="form-label">Apellidos *</label
+              ><input
+                id="apellidos"
+                class="form-control"
+                type="text"
+                formControlName="apellidos"
+                maxlength="100"
+              /><app-field-error [control]="form.controls.apellidos" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label for="idEspecialidad" class="form-label">Especialidad *</label
+              ><select id="idEspecialidad" class="form-select" formControlName="idEspecialidad">
+                <option [ngValue]="0">Selecciona una especialidad</option>
+                <option
+                  *ngFor="let e of especialidades"
+                  [ngValue]="e.idEspecialidad"
+                  [disabled]="!e.estado && e.idEspecialidad !== especialidadOriginal"
+                >
+                  {{ e.nombre }}{{ e.estado ? '' : ' (inactiva)' }}
+                </option></select
+              ><app-field-error [control]="form.controls.idEspecialidad" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label for="estado" class="form-label">Estado</label
+              ><select id="estado" class="form-select" formControlName="estado">
+                <option [ngValue]="true">Activo</option>
+                <option [ngValue]="false">Inactivo</option></select
+              ><app-field-error [control]="form.controls.estado" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label for="telefono" class="form-label">Teléfono</label
+              ><input
+                id="telefono"
+                class="form-control"
+                type="tel"
+                formControlName="telefono"
+                maxlength="15"
+              /><app-field-error [control]="form.controls.telefono" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label for="correo" class="form-label">Correo</label
+              ><input
+                id="correo"
+                class="form-control"
+                type="email"
+                formControlName="correo"
+                maxlength="100"
+              /><app-field-error [control]="form.controls.correo" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              {{ guardando ? 'Guardando…' : 'Guardar cambios' }}</button
+            ><button type="button" class="btn btn-outline-secondary" (click)="cancelar()">
+              Cancelar
+            </button>
+          </div>
+        </fieldset>
+      </form>
+    </div>
+  </section>
+}
+<section class="panel">
+  <div class="panel-header">
+    <h2>
+      Directorio <span class="tag ms-2">{{ lista.length }}</span>
+    </h2>
+    <div class="d-flex gap-2 align-items-center">
+      <label class="visually-hidden" for="buscar">Buscar médicos</label
+      ><input
+        id="buscar"
+        class="form-control search-box"
+        [(ngModel)]="busqueda"
+        placeholder="Buscar en el directorio"
+      /><button
+        class="btn btn-outline-secondary"
+        (click)="cargar()"
+        [disabled]="cargando || guardando"
+      >
+        Actualizar
+      </button>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Médico</th>
+          <th>Especialidad</th>
+          <th>CMP / DNI</th>
+          <th>Estado</th>
+          @if (puedeEditar) {
+            <th>Acciones</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let dato of filtrados">
+          <td>#{{ dato.idMedico }}</td>
+          <td>
+            <span class="person-name">{{ dato.nombres }} {{ dato.apellidos }}</span
+            ><span class="table-subtext">{{ dato.correo || dato.telefono || 'Sin contacto' }}</span>
+          </td>
+          <td>{{ dato.especialidad.nombre }}</td>
+          <td>
+            {{ dato.cmp }}<span class="table-subtext">{{ dato.dni }}</span>
+          </td>
+          <td>
+            <span class="tag" [class.activo]="dato.estado" [class.inactivo]="!dato.estado">{{
+              dato.estado ? 'Activo' : 'Inactivo'
+            }}</span>
+          </td>
+          @if (puedeEditar) {
+            <td>
+              <div class="actions">
+                <button
+                  class="btn btn-sm btn-outline-primary"
+                  (click)="editar(dato)"
+                  [disabled]="guardando"
+                >
+                  Editar</button
+                ><button
+                  class="btn btn-sm btn-outline-danger"
+                  (click)="porEliminar = dato"
+                  [disabled]="guardando"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </td>
+          }
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  @if (!cargando && !filtrados.length) {
+    <div class="empty-state">
+      {{ busqueda ? 'No hay coincidencias para esa búsqueda.' : 'Todavía no hay registros.' }}
+    </div>
+  }
+</section>
+<p class="section-note">
+  Los médicos con citas no se eliminan. Puedes desactivarlos para impedir nuevas reservas.
+</p>
+@if (porEliminar; as dato) {
+  <div class="modal-backdrop-local">
+    <section
+      class="confirm-dialog"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="confirm-title"
+    >
+      <h2 id="confirm-title">¿Eliminar este registro?</h2>
+      <p>
+        {{ nombreEliminar(dato) }}<br />La eliminación solo se permite si no existen registros
+        vinculados.
+      </p>
+      <div class="d-flex gap-2">
+        <button class="btn btn-danger" (click)="confirmarEliminar()" [disabled]="guardando">
+          {{ guardando ? 'Eliminando…' : 'Confirmar eliminación' }}</button
+        ><button
+          class="btn btn-outline-secondary"
+          (click)="porEliminar = null"
+          [disabled]="guardando"
+        >
+          Conservar
+        </button>
+      </div>
+    </section>
+  </div>
+}

@@ -1,0 +1,168 @@
+<section class="page-heading">
+  <div>
+    <span class="eyebrow">DIRECTORIO CLÍNICO</span>
+    <h1>Especialidades</h1>
+    <p>Organiza las especialidades disponibles en la clínica.</p>
+  </div>
+  @if (puedeEditar) {
+    <button class="btn btn-primary" (click)="nuevo()" [disabled]="guardando">
+      + Nuevo registro
+    </button>
+  }
+</section>
+<app-feedback [error]="error" [exito]="exito" [cargando]="cargando" />
+@if (abierto && puedeEditar) {
+  <section class="panel">
+    <div class="panel-header">
+      <h2>{{ editando === null ? 'Registrar especialidad' : 'Editar especialidad' }}</h2>
+      <span class="section-note">{{ editando ? 'ID ' + editando : 'Nuevo registro' }}</span>
+    </div>
+    <div class="panel-body">
+      <p class="required-note">Los campos con * son obligatorios.</p>
+      <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+        <fieldset [disabled]="guardando">
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label for="nombre" class="form-label">Nombre *</label
+              ><input
+                id="nombre"
+                class="form-control"
+                type="text"
+                formControlName="nombre"
+                maxlength="100"
+              /><app-field-error [control]="form.controls.nombre" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label for="estado" class="form-label">Estado</label
+              ><select id="estado" class="form-select" formControlName="estado">
+                <option [ngValue]="true">Activo</option>
+                <option [ngValue]="false">Inactivo</option></select
+              ><app-field-error [control]="form.controls.estado" />
+            </div>
+            <div class="col-12">
+              <label for="descripcion" class="form-label">Descripción</label
+              ><textarea
+                id="descripcion"
+                class="form-control"
+                formControlName="descripcion"
+                rows="3"
+                maxlength="255"
+              ></textarea
+              ><app-field-error [control]="form.controls.descripcion" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              {{ guardando ? 'Guardando…' : 'Guardar cambios' }}</button
+            ><button type="button" class="btn btn-outline-secondary" (click)="cancelar()">
+              Cancelar
+            </button>
+          </div>
+        </fieldset>
+      </form>
+    </div>
+  </section>
+}
+<section class="panel">
+  <div class="panel-header">
+    <h2>
+      Directorio <span class="tag ms-2">{{ lista.length }}</span>
+    </h2>
+    <div class="d-flex gap-2 align-items-center">
+      <label class="visually-hidden" for="buscar">Buscar especialidades</label
+      ><input
+        id="buscar"
+        class="form-control search-box"
+        [(ngModel)]="busqueda"
+        placeholder="Buscar en el directorio"
+      /><button
+        class="btn btn-outline-secondary"
+        (click)="cargar()"
+        [disabled]="cargando || guardando"
+      >
+        Actualizar
+      </button>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Especialidad</th>
+          <th>Descripción</th>
+          <th>Estado</th>
+          @if (puedeEditar) {
+            <th>Acciones</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let dato of filtrados">
+          <td>#{{ dato.idEspecialidad }}</td>
+          <td class="person-name">{{ dato.nombre }}</td>
+          <td>{{ dato.descripcion || '—' }}</td>
+          <td>
+            <span class="tag" [class.activo]="dato.estado" [class.inactivo]="!dato.estado">{{
+              dato.estado ? 'Activa' : 'Inactiva'
+            }}</span>
+          </td>
+          @if (puedeEditar) {
+            <td>
+              <div class="actions">
+                <button
+                  class="btn btn-sm btn-outline-primary"
+                  (click)="editar(dato)"
+                  [disabled]="guardando"
+                >
+                  Editar</button
+                ><button
+                  class="btn btn-sm btn-outline-danger"
+                  (click)="porEliminar = dato"
+                  [disabled]="guardando"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </td>
+          }
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  @if (!cargando && !filtrados.length) {
+    <div class="empty-state">
+      {{ busqueda ? 'No hay coincidencias para esa búsqueda.' : 'Todavía no hay registros.' }}
+    </div>
+  }
+</section>
+<p class="section-note">
+  Si una especialidad tiene médicos, desactívala desde Editar para conservar las relaciones.
+</p>
+@if (porEliminar; as dato) {
+  <div class="modal-backdrop-local">
+    <section
+      class="confirm-dialog"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="confirm-title"
+    >
+      <h2 id="confirm-title">¿Eliminar este registro?</h2>
+      <p>
+        {{ nombreEliminar(dato) }}<br />La eliminación solo se permite si no existen registros
+        vinculados.
+      </p>
+      <div class="d-flex gap-2">
+        <button class="btn btn-danger" (click)="confirmarEliminar()" [disabled]="guardando">
+          {{ guardando ? 'Eliminando…' : 'Confirmar eliminación' }}</button
+        ><button
+          class="btn btn-outline-secondary"
+          (click)="porEliminar = null"
+          [disabled]="guardando"
+        >
+          Conservar
+        </button>
+      </div>
+    </section>
+  </div>
+}

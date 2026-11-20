@@ -1,0 +1,53 @@
+<div class="app-shell">
+  <aside class="sidebar" [class.mobile-open]="abierto">
+    <a class="sidebar-brand" routerLink="/citas"
+      ><span class="brand-icon">+</span><span>Clínica<strong>San Gabriel</strong></span></a
+    >
+    <p class="nav-label">ESPACIO DE TRABAJO</p>
+    <nav aria-label="Menú principal" (click)="abierto = false">
+      <a routerLink="/citas" routerLinkActive="active"
+        ><span class="nav-symbol">▦</span> Agenda de citas</a
+      >
+      <a routerLink="/pacientes" routerLinkActive="active"
+        ><span class="nav-symbol">♧</span> Pacientes</a
+      >
+      <a routerLink="/medicos" routerLinkActive="active"
+        ><span class="nav-symbol">✚</span> Médicos</a
+      >
+      <a routerLink="/especialidades" routerLinkActive="active"
+        ><span class="nav-symbol">◈</span> Especialidades</a
+      >
+      @if (auth.tieneRol('ADMIN', 'MEDICO')) {
+        <a routerLink="/atenciones" routerLinkActive="active"
+          ><span class="nav-symbol">▤</span> Atenciones</a
+        >
+      }
+    </nav>
+    <div class="sidebar-footer">
+      <div class="small mb-2">Sesión de {{ auth.perfil()?.rol }}</div>
+      <button class="btn btn-outline-light w-100" (click)="salir()">Cerrar sesión</button>
+    </div>
+  </aside>
+  <div class="workspace">
+    <header class="topbar">
+      <div class="d-flex align-items-center gap-3">
+        <button
+          class="btn btn-outline-secondary mobile-toggle"
+          (click)="abierto = !abierto"
+          [attr.aria-expanded]="abierto"
+          aria-label="Abrir menú"
+        >
+          ☰</button
+        ><span class="topbar-label">Gestión de la clínica</span>
+      </div>
+      <div class="user-chip">
+        <span class="avatar">{{ auth.perfil()?.username?.slice(0, 1)?.toUpperCase() }}</span
+        ><span
+          >{{ auth.perfil()?.username }}<small>{{ auth.perfil()?.rol }}</small></span
+        >
+      </div>
+    </header>
+    <main id="contenido" class="main-content"><router-outlet /></main>
+    <footer class="workspace-footer">Clínica San Gabriel · Intranet</footer>
+  </div>
+</div>

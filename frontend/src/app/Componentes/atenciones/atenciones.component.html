@@ -1,0 +1,203 @@
+<section class="page-heading">
+  <div>
+    <span class="eyebrow">REGISTRO CLÍNICO</span>
+    <h1>Atenciones</h1>
+    <p>Consulta las atenciones y registra la información de cada cita.</p>
+  </div>
+  <button class="btn btn-primary" (click)="nuevo()" [disabled]="guardando">+ Nueva atención</button>
+</section>
+<app-feedback [error]="error" [exito]="exito" [cargando]="cargando" />
+@if (abierto) {
+  <section class="panel">
+    <div class="panel-header">
+      <h2>{{ editando === null ? 'Registrar atención' : 'Editar atención #' + editando }}</h2>
+      <span class="section-note">Una atención por cita</span>
+    </div>
+    <div class="panel-body">
+      <p class="required-note">Los campos con * son obligatorios.</p>
+      <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+        <fieldset [disabled]="guardando">
+          <div class="row g-3">
+            <div class="col-12">
+              <label for="idCita" class="form-label">Cita *</label
+              ><select id="idCita" class="form-select" formControlName="idCita">
+                <option [ngValue]="0">Selecciona la cita del paciente</option>
+                <option *ngFor="let c of disponibles" [ngValue]="c.idCita">
+                  {{ etiqueta(c) }}
+                </option></select
+              ><app-field-error [control]="form.controls.idCita" />
+              @if (!disponibles.length) {
+                <small class="text-secondary"
+                  >No hay citas pendientes o confirmadas. Registra una cita desde la agenda.</small
+                >
+              }
+              @if (editando) {
+                <small class="text-secondary">La cita vinculada se conserva al editar.</small>
+              }
+            </div>
+            <div class="col-12">
+              <label for="signosVitales" class="form-label">Signos vitales</label
+              ><input
+                id="signosVitales"
+                class="form-control"
+                formControlName="signosVitales"
+                maxlength="255"
+              /><app-field-error [control]="form.controls.signosVitales" />
+            </div>
+            <div class="col-12">
+              <label for="diagnostico" class="form-label">Diagnóstico *</label
+              ><textarea
+                id="diagnostico"
+                class="form-control"
+                rows="3"
+                formControlName="diagnostico"
+                maxlength="10000"
+              ></textarea
+              ><app-field-error [control]="form.controls.diagnostico" />
+            </div>
+            <div class="col-md-6">
+              <label for="tratamientoReceta" class="form-label">Tratamiento / receta</label
+              ><textarea
+                id="tratamientoReceta"
+                class="form-control"
+                rows="4"
+                formControlName="tratamientoReceta"
+                maxlength="10000"
+              ></textarea
+              ><app-field-error [control]="form.controls.tratamientoReceta" />
+            </div>
+            <div class="col-md-6">
+              <label for="observaciones" class="form-label">Observaciones</label
+              ><textarea
+                id="observaciones"
+                class="form-control"
+                rows="4"
+                formControlName="observaciones"
+                maxlength="10000"
+              ></textarea
+              ><app-field-error [control]="form.controls.observaciones" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit">
+              {{ guardando ? 'Guardando…' : 'Guardar atención' }}</button
+            ><button type="button" class="btn btn-outline-secondary" (click)="cancelar()">
+              Cancelar
+            </button>
+          </div>
+        </fieldset>
+      </form>
+    </div>
+  </section>
+}
+@if (detalle; as a) {
+  <section class="panel">
+    <div class="panel-header">
+      <h2>
+        Atención #{{ a.idAtencion }} · {{ a.cita.paciente.nombres }} {{ a.cita.paciente.apellidos }}
+      </h2>
+      <button class="btn btn-sm btn-outline-secondary" (click)="detalle = null">
+        Cerrar detalle
+      </button>
+    </div>
+    <div class="panel-body">
+      <p class="section-note">
+        Cita #{{ a.cita.idCita }} · {{ a.cita.fechaCita | date: 'dd/MM/yyyy' }} ·
+        {{ a.cita.medico.nombres }} {{ a.cita.medico.apellidos }}
+      </p>
+      <div class="row g-3">
+        <div class="col-12">
+          <h3>Signos vitales</h3>
+          <p class="detail-text">{{ a.signosVitales || 'Sin registro' }}</p>
+        </div>
+        <div class="col-12">
+          <h3>Diagnóstico</h3>
+          <p class="detail-text">{{ a.diagnostico }}</p>
+        </div>
+        <div class="col-md-6">
+          <h3>Tratamiento / receta</h3>
+          <p class="detail-text">{{ a.tratamientoReceta || 'Sin registro' }}</p>
+        </div>
+        <div class="col-md-6">
+          <h3>Observaciones</h3>
+          <p class="detail-text">{{ a.observaciones || 'Sin observaciones' }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+}
+<section class="panel">
+  <div class="panel-header">
+    <h2>
+      Historial <span class="tag ms-2">{{ lista.length }}</span>
+    </h2>
+    <div class="d-flex gap-2">
+      <label for="buscar" class="visually-hidden">Buscar atenciones</label
+      ><input
+        id="buscar"
+        class="form-control search-box"
+        [(ngModel)]="busqueda"
+        placeholder="Paciente, DNI o diagnóstico"
+      /><button
+        class="btn btn-outline-secondary"
+        (click)="cargar()"
+        [disabled]="cargando || guardando"
+      >
+        Actualizar
+      </button>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>Atención / cita</th>
+          <th>Paciente</th>
+          <th>Médico</th>
+          <th>Diagnóstico</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let a of filtrados">
+          <td>
+            <span class="person-name">#{{ a.idAtencion }}</span
+            ><span class="table-subtext"
+              >Cita #{{ a.cita.idCita }} · {{ a.cita.fechaCita | date: 'dd/MM/yyyy' }}</span
+            >
+          </td>
+          <td>
+            {{ a.cita.paciente.nombres }} {{ a.cita.paciente.apellidos
+            }}<span class="table-subtext">{{ a.cita.paciente.dni }}</span>
+          </td>
+          <td>
+            {{ a.cita.medico.nombres }} {{ a.cita.medico.apellidos
+            }}<span class="table-subtext">{{ a.cita.medico.especialidad.nombre }}</span>
+          </td>
+          <td>
+            {{ a.diagnostico.length > 80 ? a.diagnostico.slice(0, 80) + '…' : a.diagnostico }}
+          </td>
+          <td>
+            <div class="actions">
+              <button class="btn btn-sm btn-outline-primary" (click)="detalle = a">
+                Ver detalle</button
+              ><button
+                class="btn btn-sm btn-outline-primary"
+                (click)="editar(a)"
+                [disabled]="guardando"
+              >
+                Editar
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  @if (!cargando && !filtrados.length) {
+    <div class="empty-state">No hay atenciones para mostrar.</div>
+  }
+</section>
+<p class="section-note">
+  Las atenciones se conservan como parte del historial; no se eliminan desde la intranet.
+</p>
